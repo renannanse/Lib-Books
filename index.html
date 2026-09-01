@@ -1,0 +1,1370 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Lib Books — Biblioteca V6 Pro</title>
+<!-- Bibliotecas Externas via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+if (window.pdfjsLib) {  
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+}
+</script>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--muted:#86868b;--accent:#0071e3;--border:#d2d2d7;--side:#e8e8ed;--reader:#ececf0}
+[data-theme=sepia]{--bg:#fbf0d9;--card:#f5e6cc;--text:#5c4033;--muted:#8b6b5d;--accent:#a0522d;--border:#e3d0b9;--side:#f0e1c8;--reader:#f5e6cc}
+[data-theme=dark]{--bg:#000;--card:#1c1c1e;--text:#f5f5f7;--muted:#98989f;--accent:#0a84ff;--border:#38383a;--side:#161618;--reader:#1c1c1e}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif}
+body{height:100vh;overflow:hidden;background:var(--bg);color:var(--text);display:flex}
+button,input,select{font:inherit}button{cursor:pointer}
+aside{width:260px;background:var(--side);border-right:1px solid var(--border);padding:20px;display:flex;flex-direction:column}
+.brand {display:flex;align-items:center;gap:10px;margin-bottom:24px;text-decoration:none;}
+.brand-logo-icon {width:36px;height:36px;background:linear-gradient(135deg, #ff7a00, #ff5500);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(255, 122, 0, 0.3);position:relative;overflow:hidden;}
+.brand-logo-icon::before {content:"";position:absolute;width:14px;height:18px;background:#fff;border-radius:2px;box-shadow:-3px 0 0 rgba(0,0,0,0.1);transform:rotate(-10deg);}
+.brand-text {font-size:20px;font-weight:800;letter-spacing:-0.5px;display:flex;gap:5px;}
+.brand-lib {color:#ff7a00;}
+.brand-books {color:#1d1d1f;}
+[data-theme=dark] .brand-books {color:#f5f5f7;}
+.nav{list-style:none;flex:1}.nav li{padding:10px 12px;border-radius:9px;margin-bottom:4px;cursor:pointer;font-size:14px}
+.nav li.active,.nav li:hover{background:rgba(0,113,227,.1);color:var(--accent)}
+.goal{background:var(--card);padding:15px;border:1px solid var(--border);border-radius:12px;font-size:13px}
+main{flex:1;min-width:0;display:flex;flex-direction:column}
+header{height:60px;flex:none;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 25px}
+.search{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:8px 14px;width:280px;color:var(--text);outline:none}
+.userbox{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px}
+.btn{border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{background:#ff3b30;border-color:#ff3b30;color:#fff}
+.content{flex:1;overflow:auto;padding:28px;display:none}
+.content.active{display:block}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.action-buttons{display:flex;gap:10px;align-items:center}
+.library-main{flex:1;min-width:0;height:100%;border:2px dashed transparent;border-radius:12px;transition:.2s}
+.library-main.drag-over{border-color:var(--accent);background:rgba(0,113,227,.06);box-shadow:inset 0 0 15px rgba(0,113,227,.1)}
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:22px}
+.book-card{user-select:none;background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;cursor:pointer;transition:.2s;min-width:0;position:relative}
+.book-card:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,.1)}
+.book-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.card-checkbox{position:absolute;top:8px;right:8px;z-index:10;width:18px;height:18px;cursor:pointer;accent-color:var(--accent)}
+.cover{height:210px;background:#ddd;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.cover-fallback{font-weight:700;text-align:center;padding:15px;color:#fff;word-break:break-word}
+.type-badge{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.65);color:#fff;padding:4px 7px;border-radius:7px;font-size:10px;font-weight:700}
+.book-info{padding:10px}
+.title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.author{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.progress{height:3px;background:var(--border);margin-top:8px;border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent)}
+
+/* Lista / Tabela View */
+.books-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.books-table th,.books-table td{padding:12px 16px;text-align:left;font-size:13px;border-bottom:1px solid var(--border)}
+.books-table th{background:var(--side);color:var(--muted);font-weight:600}
+.books-table tr:hover{background:rgba(0,113,227,.03)}
+
+.empty{color:var(--muted);padding:30px;text-align:center}
+#reader{position:fixed;inset:0;z-index:500;background:var(--reader);display:none;flex-direction:column}
+#reader.active{display:flex}
+.reader-top{height:56px;flex:none;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 15px;gap:10px;z-index:9999;position:relative}
+.reader-title{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reader-main{flex:1;min-height:0;display:flex}
+.thumbs{width:155px;flex:none;background:var(--side);border-right:1px solid var(--border);overflow:auto;padding:12px}
+.thumb{background:var(--card);border:2px solid transparent;border-radius:7px;padding:4px;margin-bottom:10px;cursor:pointer}
+.thumb.active{border-color:var(--accent)}
+.thumb img{display:block;width:100%;height:145px;object-fit:contain;background:#ddd;border-radius:4px}
+.thumb .n{text-align:center;font-size:10px;color:var(--muted);padding-top:4px}
+.reader-stage{flex:1;min-width:0;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:25px;background:var(--reader)}
+.page-wrap{background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.16);border-radius:5px;overflow:hidden;max-width:100%}
+#page-canvas{display:block}
+#epub-container{width:100%;height:100%;flex:1;background:var(--reader);border-radius:6px;overflow:hidden;display:flex;justify-content:center;align-items:center}
+#txt-container{width:min(850px,100%);background:var(--card);color:var(--text);padding:45px;line-height:1.7;white-space:pre-wrap;border-radius:6px}
+.reader-bottom{height:50px;flex:none;background:var(--card);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:10px}
+.reader-bottom span{font-size:12px;color:var(--muted);min-width:120px;text-align:center}
+#progress{position:fixed;left:20px;right:20px;bottom:15px;background:var(--card);border:1px solid var(--border);padding:10px 14px;border-radius:10px;display:none;z-index:900;box-shadow:0 5px 20px rgba(0,0,0,.12)}
+.progress-line{height:7px;background:var(--bg);border:1px solid var(--border);border-radius:5px;overflow:hidden;margin-top:7px}
+.progress-line i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+#toast{position:fixed;right:20px;bottom:20px;z-index:2000;background:#222;color:#fff;padding:12px 16px;border-radius:10px;display:none;font-size:13px;max-width:380px}
+.header-left{display:flex;align-items:center;gap:10px;min-width:0}
+.org-wrap{position:relative}
+.org-btn{white-space:nowrap;display:flex;align-items:center;gap:7px}
+.org-btn span{color:var(--muted);font-size:11px}
+.org-menu{position:absolute;top:calc(100% + 8px);left:0;width:280px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 14px 35px rgba(0,0,0,.16);padding:8px;display:none;z-index:100}
+.org-menu.open{display:block}
+.org-title{font-size:11px;color:var(--muted);padding:7px 9px}
+.org-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:13px}
+.org-item:hover,.org-item.active{background:rgba(0,113,227,.1);color:var(--accent)}
+.org-item b{margin-left:auto;font-size:11px;color:var(--muted)}
+.org-item.drop-target{outline:2px dashed var(--accent);background:rgba(0,113,227,.08)}
+.org-create{display:flex;gap:6px;border-top:1px solid var(--border);padding:9px 2px 2px;margin-top:5px}
+.org-create input{min-width:0;flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px}
+.org-empty{padding:10px;color:var(--muted);font-size:12px}
+#batch-bar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:30px;padding:10px 20px;box-shadow:0 10px 30px rgba(0,0,0,0.2);display:none;align-items:center;gap:15px;z-index:2500}
+#batch-bar.active{display:flex}
+</style>
+</head>
+<body>
+<aside>
+  <div class="brand">
+    <div class="brand-logo-icon"></div>
+    <div class="brand-text">
+      <span class="brand-lib">Lib</span><span class="brand-books">Books</span>
+    </div>
+  </div>
+  <ul class="nav">
+    <li class="active" id="nav-biblioteca">Biblioteca</li>
+    <li id="nav-marcadores">🔖 Marcadores & Notas</li>
+    <li id="nav-estatisticas">📊 Estatísticas</li>
+  </ul>
+  <div class="goal"><b>Meta diária</b><p id="goal" style="margin-top:6px">0 min lidos hoje</p></div>
+</aside>
+<main>
+<header>
+  <div class="header-left">
+    <input class="search" id="search" placeholder="Pesquisar por título ou autor...">
+    <div class="org-wrap">
+      <button class="btn org-btn" id="org-btn">☰ Organização <span id="org-current">Todos</span>⌄</button>
+      <div class="org-menu" id="org-menu"></div>
+    </div>
+    <button class="btn" id="view-mode-btn" onclick="toggleViewMode()" title="Alternar Visualização (Grid/Lista)">📋 Lista</button>
+  </div>
+  <div class="userbox">
+    <button class="btn" id="home-fs-btn" onclick="toggleMainFullscreen()" title="Tela Cheia">⛶</button>
+    <div class="theme-wrap" style="position:relative">
+      <button class="btn" id="home-theme-btn" onclick="toggleHomeThemeMenu(event)">⚙️ Tema</button>
+      <div class="theme-menu" id="home-theme-menu" style="position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.15);padding:6px;display:none;z-index:1100;min-width:110px">
+        <div class="theme-item-btn" onclick="setTheme('light'); event.stopPropagation();" style="padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px">Light</div>
+        <div class="theme-item-btn" onclick="setTheme('sepia'); event.stopPropagation();" style="padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px">Sépia</div>
+        <div class="theme-item-btn" onclick="setTheme('dark'); event.stopPropagation();" style="padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px">Dark</div>
+      </div>
+    </div>
+    <button class="btn" id="export-json-btn" onclick="openExportModal()">📤 Backup</button>
+    <button class="btn" id="import-json-btn" onclick="openImportModal()">📥 Restaurar</button>
+  </div>
+</header>
+<section id="tab-biblioteca" class="content active">
+  <div class="section-head">
+    <div><h2>Biblioteca</h2><p style="font-size:12px;color:var(--muted);margin-top:4px">PDF · EPUB · TXT · CBZ · ZIP</p></div>
+    <div class="action-buttons">
+      <input id="file-input" type="file" multiple accept="*/*" style="display:none">
+      <button class="btn primary" id="add-book-btn" type="button">Adicionar Livro</button>
+    </div>
+  </div>
+  <div class="library-main" id="library-drop-zone"><div id="books" class="books-grid"></div></div>
+</section>
+<section id="tab-marcadores" class="content">
+  <h2>Marcadores e Destaques</h2>
+  <div id="marks" style="margin-top:20px"></div>
+</section>
+<section id="tab-estatisticas" class="content">
+  <h2>Estatísticas de Leitura</h2>
+  <div id="stats-content" style="margin-top:20px;display:flex;gap:20px;flex-wrap:wrap"></div>
+</section>
+</main>
+<div id="batch-bar">
+  <span id="batch-count" style="font-size:13px;font-weight:600">0 selecionados</span>
+  <button class="btn primary" onclick="batchMoveModal()">📁 Mover para Pasta</button>
+  <button class="btn" onclick="batchDownloadZip()">📦 Baixar Selecionados (.zip)</button>
+  <button class="btn danger" onclick="batchDeleteBooks()">🗑️ Excluir Selecionados</button>
+  <button class="btn" onclick="clearSelection()">Cancelar</button>
+</div>
+<div id="reader">
+  <div class="reader-top">
+    <button class="btn" id="reader-back-btn">← Biblioteca</button>
+    <div class="reader-title" id="reader-title">Leitor</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn" id="reader-mark-btn" title="Salvar Marcador">🔖 Marcar</button>
+      <button class="btn" id="reader-tts-btn" title="Ouvir Texto (TTS)" onclick="toggleTTS()">🔊 Ouvir</button>
+      <button class="btn" id="zoom-out-btn">−</button>
+      <button class="btn" id="zoom-in-btn">+</button>
+      <div class="theme-wrap" style="position:relative">
+        <button class="btn" id="theme-btn" onclick="toggleThemeMenu(event)">⚙️ Tema</button>
+        <div class="theme-menu" id="theme-menu" style="position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.15);padding:6px;display:none;z-index:1100;min-width:110px">
+          <div class="theme-item" onclick="setTheme('light'); event.stopPropagation();" style="padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px">Light</div>
+          <div class="theme-item" onclick="setTheme('sepia'); event.stopPropagation();" style="padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px">Sépia</div>
+          <div class="theme-item" onclick="setTheme('dark'); event.stopPropagation();" style="padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px">Dark</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="reader-main">
+    <div class="thumbs" id="thumbs"></div>
+    <div class="reader-stage" id="reader-stage">
+      <div class="page-wrap"><canvas id="page-canvas"></canvas></div>
+      <div id="epub-container" style="display:none"></div>
+      <div id="txt-container" style="display:none"></div>
+    </div>
+  </div>
+  <div class="reader-bottom">
+    <button class="btn" id="page-prev-btn">◀</button>
+    <span id="page-indicator">Página 1</span>
+    <button class="btn" id="page-next-btn">▶</button>
+    <button class="btn" id="fullscreen-btn">⛶</button>
+  </div>
+</div>
+<div id="progress"><b id="progressText">Processando...</b><div class="progress-line"><i id="progressFill"></i></div></div>
+<div id="toast"></div>
+
+<script>
+const DB_NAME="LibBooks_DB", DB_VERSION=2;
+const STORES={books:"books",pages:"pages",thumbs:"thumbs"};
+let db=null, books=[], currentBook=null, currentPage=1, scale=1.2, pdfDoc=null, epubBook=null;
+let currentFolder="__all__", draggedBookId=null, suppressClick=false, viewMode="grid";
+const selectedBookIds = new Set();
+let objectUrls = [];
+
+function cleanObjectUrls() {
+  objectUrls.forEach(url => URL.revokeObjectURL(url));
+  objectUrls = [];
+}
+
+function registerObjectUrl(url) {
+  objectUrls.push(url);
+  return url;
+}
+
+function $(id){return document.getElementById(id)}
+function ext(name){return name.split(".").pop().toLowerCase()}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function toast(msg){  
+  const t = $("toast");  
+  if(!t) return;  
+  t.textContent=msg;  
+  t.style.display="block";  
+  setTimeout(()=>t.style.display="none",3500);
+}
+function progress(show,text="Processando...",pct=0){  
+  const p = $("progress");  
+  if(!p) return;  
+  p.style.display=show?"block":"none";  
+  $("progressText").textContent=text;  
+  $("progressFill").style.width=pct+"%";
+}
+
+function openDB(){ 
+  return new Promise((resolve,reject)=>{  
+    try {    
+      const req=indexedDB.open(DB_NAME,DB_VERSION);    
+      req.onupgradeneeded=()=>{      
+        const d=req.result;      
+        if(!d.objectStoreNames.contains(STORES.books)) d.createObjectStore(STORES.books,{keyPath:"id"});      
+        if(!d.objectStoreNames.contains(STORES.pages)){let s=d.createObjectStore(STORES.pages,{keyPath:"key"});s.createIndex("bookId","bookId")}      
+        if(!d.objectStoreNames.contains(STORES.thumbs)){let s=d.createObjectStore(STORES.thumbs,{keyPath:"key"});s.createIndex("bookId","bookId")}    
+      };    
+      req.onsuccess=()=>{db=req.result;resolve(db)};    
+      req.onerror=()=>reject(req.error || "Erro ao abrir IndexedDB");  
+    } catch(e) {    
+      reject(e);  } 
+  }) 
+}
+
+function tx(store,mode="readonly"){  
+  if(!db) throw new Error("Banco de dados não inicializado.");  
+  return db.transaction(store,mode).objectStore(store);
+}
+function put(store,value){
+  return new Promise((res,rej)=>{try{let r=tx(store,"readwrite").put(value);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})
+}
+function get(store,key){
+  return new Promise((res,rej)=>{try{let r=tx(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})
+}
+function all(store){
+  return new Promise((res,rej)=>{try{let r=tx(store).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})
+}
+
+async function initApp() {  
+  try {     
+    await openDB();   
+  } catch(err) {     
+    console.warn("IndexedDB restrito ou corrompido, tentando recriar...", err);    
+    try {      
+      await new Promise((res, rej) => {        
+        const delReq = indexedDB.deleteDatabase(DB_NAME);        
+        delReq.onsuccess = () => res();        
+        delReq.onerror = () => rej(delReq.error);      });      
+      await openDB();    } catch(e2) {      
+      toast("Aviso: Banco local limitado.");    }  
+  }  
+  await loadBooks();  
+  renderLibrary();
+}
+
+async function loadBooks(){  
+  try {    
+    if(!db) { books = []; return; }    
+    books = (await all(STORES.books)).sort((a,b)=>(a.order??0)-(b.order??0));    
+    books.forEach((b,i)=>{if(!("folder" in b))b.folder="";if(!("order" in b))b.order=i;put(STORES.books,b).catch(()=>{})});  
+  } catch(e) {    
+    books = [];  
+  }  
+  renderOrganization();
+}
+
+function tab(name){  
+  document.querySelectorAll(".content").forEach(x=>x.classList.remove("active"));  
+  const targetTab = $("tab-"+name);  
+  if(targetTab) targetTab.classList.add("active");  
+  document.querySelectorAll(".nav li").forEach(x=>x.classList.remove("active"));  
+  if(name==="marcadores") {    
+    const m = $("nav-marcadores"); if(m) m.classList.add("active");    
+    renderMarks();  
+  } else if(name==="estatisticas") {
+    const s = $("nav-estatisticas"); if(s) s.classList.add("active");
+    renderStats();
+  } else {    
+    const b = $("nav-biblioteca"); if(b) b.classList.add("active");    
+    renderOrganization();    
+    renderLibrary($("search")?.value || "");  }
+}
+
+window.toggleViewMode = function() {
+  viewMode = viewMode === "grid" ? "list" : "grid";
+  $("view-mode-btn").textContent = viewMode === "grid" ? "📋 Lista" : "🖼️ Grid";
+  renderLibrary($("search")?.value || "");
+};
+
+window.renderLibrary = function(filter=""){ 
+  const grid=$("books"); 
+  if(!grid) return; 
+  grid.innerHTML=""; 
+  const q=filter.toLowerCase(); 
+  let arr=books.filter(b => b.title.toLowerCase().includes(q) || (b.author && b.author.toLowerCase().includes(q))); 
+  if(currentFolder==="__none__")arr=arr.filter(b=>!b.folder); 
+  else if(currentFolder!=="__all__")arr=arr.filter(b=>b.folder===currentFolder); 
+  arr.sort((a,b)=>(a.order??0)-(b.order??0));  
+  if(!arr.length){
+    grid.innerHTML='<div class="empty" style="grid-column:1/-1">Nenhum título nesta visualização. Arraste livros para cá ou use o botão acima!</div>';
+    return;
+  } 
+
+  if(viewMode === "list") {
+    let tableHtml = `<table class="books-table"><thead><tr><th>Título</th><th>Autor</th><th>Formato</th><th>Pasta</th><th>Progresso</th><th>Ações</th></tr></thead><tbody>`;
+    arr.forEach(book => {
+      const pct = book.totalPages ? Math.round((book.page||1)/book.totalPages*100) : 0;
+      tableHtml += `<tr data-id="${book.id}">
+        <td><b>${esc(book.title)}</b></td>
+        <td>${esc(book.author||"Autor Local")}</td>
+        <td><span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px">${book.ext.toUpperCase()}</span></td>
+        <td>${esc(book.folder||"Geral")}</td>
+        <td>${pct}%</td>
+        <td>
+          <button class="btn" style="padding:3px 8px;font-size:11px" onclick="openBook('${book.id}')">Ler</button>
+          <button class="btn" style="padding:3px 8px;font-size:11px" onclick="openEditModal('${book.id}')">Editar</button>
+          <button class="btn danger" style="padding:3px 8px;font-size:11px" onclick="deleteBook('${book.id}')">Excluir</button>
+        </td>
+      </tr>`;
+    });
+    tableHtml += `</tbody></table>`;
+    grid.innerHTML = tableHtml;
+    return;
+  }
+
+  arr.forEach(book=>{  
+    const card=document.createElement("div");
+    card.className="book-card"+(selectedBookIds.has(book.id)?" selected":"");
+    card.draggable=true;
+    card.dataset.id=book.id;  
+    let wasDragged=false;    
+    
+    card.addEventListener("click",(e)=>{    
+      if(e.target.closest(".book-actions") || e.target.closest("button") || e.target.classList.contains("card-checkbox")) return;    
+      if(!wasDragged&&!suppressClick) openBook(book.id);  
+    });
+
+    card.addEventListener("dragstart",e=>{wasDragged=true;draggedBookId=book.id;suppressClick=true;card.style.opacity=".45";e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(book.id))});  
+    card.addEventListener("dragend",()=>{card.style.opacity="";setTimeout(()=>{suppressClick=false;wasDragged=false},100)});  
+    card.addEventListener("dragover",e=>{e.preventDefault();e.dataTransfer.dropEffect="move";card.style.outline="2px dashed var(--accent)"});  
+    card.addEventListener("dragleave",()=>card.style.outline="");  
+    card.addEventListener("drop",async e=>{e.preventDefault();card.style.outline="";const fromId=draggedBookId||e.dataTransfer.getData("text/plain");if(!fromId||String(fromId)===String(book.id))return;await reorderBooks(fromId,book.id);draggedBookId=null});    
+    
+    const chk = document.createElement("input");  
+    chk.type = "checkbox";  
+    chk.className = "card-checkbox";  
+    chk.checked = selectedBookIds.has(book.id);  
+    chk.onchange = (e) => {    
+      e.stopPropagation();    
+      if(chk.checked) selectedBookIds.add(book.id);    
+      else selectedBookIds.delete(book.id);    
+      card.classList.toggle("selected", chk.checked);    
+      updateBatchBar();  
+    };  
+    card.appendChild(chk);
+
+    const cover=document.createElement("div");
+    cover.className="cover";
+    cover.style.background=book.coverColor||"#0071e3";  
+    if(book.coverKey && db){    
+      const im=document.createElement("img");
+      im.alt="Capa";
+      cover.appendChild(im);    
+      get(STORES.thumbs,book.coverKey).then(row=>{
+        if(row?.blob) im.src = registerObjectUrl(URL.createObjectURL(row.blob));
+      }).catch(()=>{});  
+    } else {    
+      cover.innerHTML=`<div class="cover-fallback">${esc(book.title)}</div>`;  
+    }  
+    cover.insertAdjacentHTML("beforeend",`<span class="type-badge">${book.ext.toUpperCase()}</span>`);  
+    const pct=book.totalPages?Math.round((book.page||1)/book.totalPages*100):0;  
+    card.append(cover);    
+    
+    const actionsHtml = `<div class="book-actions" style="display:flex;gap:4px;margin-top:10px;border-top:1px solid var(--border);padding-top:8px">    
+      <button title="Editar metadados" class="btn-action edit-btn" data-id="${book.id}" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 6px;cursor:pointer;font-size:11px">✏️</button>
+      <button title="Baixar arquivo original" class="btn-action download-btn" data-id="${book.id}" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 7px;cursor:pointer;font-size:11px">📥 Baixar</button>    
+      <button title="Mover para pasta" class="btn-action move-btn" data-id="${book.id}" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;gap:4px">📁 Pasta</button>    
+      <button title="Excluir livro" class="btn-action delete-btn" data-id="${book.id}" style="background:rgba(255,59,48,0.1);color:#ff3b30;border:1px solid rgba(255,59,48,0.3);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px">×</button>  
+    </div>`;
+    
+    card.insertAdjacentHTML("beforeend",`<div class="book-info"><div class="title">${esc(book.title)}</div><div class="author">${esc(book.author||"Autor Local")}</div><div class="progress"><i style="width:${pct}%"></i></div>${actionsHtml}</div>`);  
+    grid.appendChild(card) 
+  })
+}
+
+function updateBatchBar(){  
+  const bar = $("batch-bar");  
+  const count = selectedBookIds.size;  
+  if(count > 0) {    
+    bar.classList.add("active");    
+    $("batch-count").textContent = `${count} ${count===1?"livro selecionado":"livros selecionados"}`;  
+  } else {    
+    bar.classList.remove("active");  
+  }
+}
+
+window.clearSelection = function(){  
+  selectedBookIds.clear();  
+  updateBatchBar();  
+  renderLibrary($("search")?.value || "");
+};
+
+function folderNames(){return [...new Set(books.filter(b=>b.folder).map(b=>b.folder))].sort((a,b)=>a.localeCompare(b,"pt-BR"))}
+function renderOrganization(){ 
+  const panel=$("org-menu"); 
+  if(!panel)return; 
+  const folders=folderNames(), mine=books; 
+  const label=currentFolder==="__all__"?"Todos":currentFolder==="__none__"?"Sem pasta":currentFolder; 
+  const currentOrgEl = $("org-current"); 
+  if(currentOrgEl) currentOrgEl.textContent=label;  
+  
+  let folderDownloadOption = ""; 
+  if(currentFolder !== "__all__" && currentFolder !== "__none__") {   
+    folderDownloadOption = `<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">     
+      <button class="btn primary" style="width:100%;font-size:12px;padding:6px" onclick="downloadFolderZip('${esc(currentFolder).replace(/'/g, "\\'")}')">📦 Baixar Pasta Atual (.zip)</button>   
+    </div>`; 
+  }
+
+  panel.innerHTML=`<div class="org-title">ORGANIZAR BIBLIOTECA</div>   
+    <div class="org-item ${currentFolder==="__all__"?"active":""}" data-folder="__all__">📚 <span>Todos os títulos</span><b>${mine.length}</b></div>   
+    <div class="org-item ${currentFolder==="__none__"?"active":""}" data-folder="__none__">📥 <span>Sem pasta</span><b>${mine.filter(b=>!b.folder).length}</b></div>`; 
+  if(folders.length)folders.forEach(f=>panel.insertAdjacentHTML("beforeend",`<div class="org-item ${currentFolder===f?"active":""}" data-folder="${esc(f)}">📁 <span style="flex:1;overflow:hidden;text-overflow:ellipsis" title="${esc(f)}">${esc(f)}</span><b>${mine.filter(b=>b.folder===f).length}</b> <span title="Excluir pasta" onclick="event.stopPropagation(); deleteFolder('${esc(f).replace(/'/g, "\'")}')" style="color:#ff3b30;padding:2px 6px;font-weight:bold;margin-left:4px;cursor:pointer">×</span></div>`)); 
+  else panel.insertAdjacentHTML("beforeend",`<div class="org-empty">Nenhuma pasta criada.</div>`); 
+  panel.insertAdjacentHTML("beforeend",`<div class="org-create"><input id="new-folder" placeholder="Nova pasta"><button class="btn" id="create-folder-btn">＋</button></div>${folderDownloadOption}`);
+  
+  const createFolderBtn = $("create-folder-btn"); 
+  if(createFolderBtn) createFolderBtn.onclick = criarPasta;
+  
+  panel.querySelectorAll(".org-item").forEach(el=>{   
+    el.onclick=()=>{currentFolder=el.dataset.folder;renderOrganization();const s=$("search");renderLibrary(s?s.value:"");panel.classList.remove("open")};   
+    el.ondragover=e=>{e.preventDefault();el.classList.add("drop-target")};   
+    el.ondragleave=()=>el.classList.remove("drop-target");   
+    el.ondrop=async e=>{e.preventDefault();el.classList.remove("drop-target");const id=draggedBookId||e.dataTransfer.getData("text/plain");const b=books.find(x=>String(x.id)===String(id));if(!b)return;if(el.dataset.folder!=="__all__")b.folder=el.dataset.folder==="__none__"?"":el.dataset.folder;await updateBook();renderOrganization();renderLibrary($("search")?.value||"");toast(b.folder?`Movido para "${b.folder}".`:"Removido da pasta.")}; 
+  });
+}
+
+function toggleOrganization(e){  
+  e.stopPropagation();  
+  const m = $("org-menu");  
+  if(m) { m.classList.toggle("open"); renderOrganization(); }
+}
+document.addEventListener("click",e=>{if(!e.target.closest(".org-wrap"))$("org-menu")?.classList.remove("open")});
+
+async function criarPasta(){ 
+  const input=$("new-folder"),name=(input?.value||prompt("Nome da nova pasta:")||"").trim();
+  if(!name)return; 
+  if(folderNames().some(f=>f.toLowerCase()===name.toLowerCase())){toast("Essa pasta já existe.");return} 
+  currentFolder=name;
+  renderOrganization();
+  renderLibrary($("search")?.value||"");
+  toast(`Pasta "${name}" criada.`);
+}
+
+async function reorderBooks(fromId,toId){ 
+  const visible=books.filter(b=>(currentFolder==="__all__"||(currentFolder==="__none__"?!b.folder:b.folder===currentFolder))).sort((a,b)=>(a.order??0)-(b.order??0)); 
+  const a=visible.findIndex(x=>String(x.id)===String(fromId)),b=visible.findIndex(x=>String(x.id)===String(toId));
+  if(a<0||b<0)return; 
+  const [moved]=visible.splice(a,1);
+  visible.splice(b,0,moved);
+  visible.forEach((x,i)=>{x.order=i}); 
+  if(db) await Promise.all(visible.map(x=>put(STORES.books,x))); 
+  await loadBooks();
+  renderOrganization();
+  renderLibrary($("search")?.value||"");
+  toast("Ordem atualizada.");
+}
+
+function naturalSort(a,b){ const aa=a.toLowerCase().split(/(\d+)/).map(x=>/^\d+$/.test(x)?Number(x):x); const bb=b.toLowerCase().split(/(\d+)/).map(x=>/^\d+$/.test(x)?Number(x):x); for(let i=0;i<Math.max(aa.length,bb.length);i++){if(aa[i]===bb[i])continue;if(aa[i]===undefined)return -1;if(bb[i]===undefined)return 1;return aa[i]<bb[i]?-1:1}return 0}
+function imageName(name){return /\.(jpg|jpeg|png|gif|webp|bmp|avif)$/i.test(name)}
+function preferredCover(name){ const n=name.split("/").pop().toLowerCase(); return /^(cover|capa|front|frontcover)([-_. ].*)?\.(jpg|jpeg|png|webp|gif)$/i.test(n)}
+
+async function getZipImages(file){ 
+  const zip=await JSZip.loadAsync(await file.arrayBuffer()), out=[]; 
+  for(const [name,obj] of Object.entries(zip.files)) if(!obj.dir&&imageName(name)) out.push({name,data:new Uint8Array(await obj.async("uint8array"))}); 
+  out.sort((a,b)=>naturalSort(a.name,b.name));
+  return out;
+}
+
+function blobFromBytes(bytes,name){return new Blob([bytes],{type:guessMime(name)})}
+function guessMime(name){const e=ext(name);return ({jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",gif:"image/gif",webp:"image/webp",bmp:"image/bmp",avif:"image/avif"})[e]||"application/octet-stream"}
+
+async function makeThumb(blob,max=240){ 
+  const url=registerObjectUrl(URL.createObjectURL(blob)); 
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url}); 
+  const ratio=Math.min(max/img.width,max/img.height,1), c=document.createElement("canvas");
+  c.width=Math.max(1,Math.round(img.width*ratio));
+  c.height=Math.max(1,Math.round(img.height*ratio));
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height); 
+  return new Promise(r=>c.toBlob(r,"image/jpeg",.82))
+}
+
+async function pdfCover(blob){ 
+  if(!window.pdfjsLib) throw new Error("PDF.js não carregado."); 
+  const doc=await pdfjsLib.getDocument({data:await blob.arrayBuffer()}).promise, p=await doc.getPage(1); 
+  const vp=p.getViewport({scale:.45}), c=document.createElement("canvas");
+  c.width=vp.width;c.height=vp.height; 
+  await p.render({canvasContext:c.getContext("2d"),viewport:vp}).promise; 
+  return new Promise(r=>c.toBlob(r,"image/jpeg",.82))
+}
+
+async function detectEpubCover(blob){ 
+  try{  
+    if(!window.ePub) return null;  
+    const b=ePub(await blob.arrayBuffer());await b.ready;const u=await b.coverUrl();if(!u)return null;  
+    const res=await fetch(u);return await res.blob() 
+  }catch(e){return null}
+}
+
+async function processFiles(files) { 
+  if(!files || !files.length) return; 
+  let successCount = 0;  
+  for(let fIdx = 0; fIdx < files.length; fIdx++) {  
+    let file = files[fIdx];  
+    const e = ext(file.name);   
+    if(!["pdf","epub","txt","cbz","zip","cbr","cb7"].includes(e)) continue;  
+    if(e === "cbr" || e === "cb7") continue;    
+    
+    progress(true, `Adicionando (${fIdx+1}/${files.length}): ${file.name}...`, Math.round(((fIdx)/files.length)*100));  
+    try{   
+      const id = crypto.randomUUID();   
+      const book = {id, title: file.name.replace(/\.[^.]+$/,""), author: "Autor Local", ext: e, type: e==="pdf"?"pdf":e==="epub"?"epub":e==="txt"?"txt":"hq", coverKey: null, totalPages: 0, page: 1, created: Date.now(), order: books.length, folder: ""};      
+      
+      if(e === "pdf"){    
+        book.coverKey = `${id}:cover`;    
+        if(db) await put(STORES.thumbs, {key: book.coverKey, bookId: id, blob: await pdfCover(file)});    
+        book.totalPages = (await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise).numPages;   
+      } else if(e === "epub"){    
+        const cover = await detectEpubCover(file);    
+        if(cover && db){ book.coverKey = `${id}:cover`; await put(STORES.thumbs, {key: book.coverKey, bookId: id, blob: await makeThumb(cover, 420)}); }    
+        book.totalPages = 1;   
+      } else if(e === "txt"){    
+        const text = await file.text();    
+        book.totalPages = 1;    
+        book.fileBlob = new Blob([text], {type: "text/plain"});   } else {    
+        const imgs = await getZipImages(file);    
+        if(!imgs.length) throw new Error("Sem imagens");    
+        book.totalPages = imgs.length;    
+        book.coverKey = `${id}:cover`;    
+        let coverIndex = imgs.findIndex(x => preferredCover(x.name));    
+        if(coverIndex < 0) coverIndex = 0;    
+        if(db) await put(STORES.thumbs, {key: book.coverKey, bookId: id, blob: await makeThumb(blobFromBytes(imgs[coverIndex].data, imgs[coverIndex].name), 420)});    
+        for(let i = 0; i < imgs.length; i++){     
+          if(db) await put(STORES.pages, {key: `${id}:${i+1}`, bookId: id, num: i+1, name: imgs[i].name, blob: blobFromBytes(imgs[i].data, imgs[i].name)});    
+        }   
+      }      
+      book.fileKey = `${id}:file`;   
+      if(db) {     
+        let fileToStore = book.fileBlob || file;     
+        delete book.fileBlob;     
+        await put(STORES.pages, {key: book.fileKey, bookId: id, num: 0, name: file.name, blob: fileToStore, kind: "original"});     
+        await put(STORES.books, book);   
+      }   
+      books.push(book);   
+      successCount++;  
+    }catch(err){   
+      console.error("Erro no arquivo:", file.name, err);
+      toast(`Falha ao processar "${file.name}": arquivo possivelmente corrompido.`);
+    } 
+  } 
+  progress(false); 
+  renderLibrary($("search")?.value || ""); 
+  renderOrganization(); 
+  if(successCount > 0) toast(`${successCount} livro(s) adicionado(s) com sucesso!`);
+}
+
+async function getOriginal(book){  
+  if(!db) return book.fileBlob;  
+  const r=await get(STORES.pages,book.fileKey);  
+  return r?.blob || book.fileBlob;
+}
+async function getPageBlob(book,n){  
+  if(!db) return null;  
+  const r=await get(STORES.pages,`${book.id}:${n}`);  
+  return r?.blob;
+}
+async function updateBook(){  
+  if(db) await put(STORES.books,currentBook);  
+  const i=books.findIndex(x=>x.id===currentBook.id);  
+  if(i>=0)books[i]=currentBook;
+}
+
+window.downloadBookFile = async function(id) {  
+  const book = books.find(b => b.id === id);  
+  if(!book) return;  
+  toast(`Preparando ${book.title}...`);  
+  try {    
+    let blob = await getOriginal(book);    
+    if(!blob) {      
+      toast("Arquivo original não encontrado no banco. Selecione o arquivo no seu computador:");      
+      const selectedFile = await new Promise((resolve) => {        
+        const inp = document.createElement("input");        
+        inp.type = "file";        
+        inp.accept = `.${book.ext}`;        
+        inp.onchange = (e) => resolve(e.target.files[0]);        
+        inp.click();      });      
+      if(!selectedFile) return;      
+      blob = selectedFile;    }    
+    const url = registerObjectUrl(URL.createObjectURL(blob));    
+    const a = document.createElement("a");    
+    a.href = url;    
+    a.download = `${book.title}.${book.ext}`;    
+    document.body.appendChild(a);    
+    a.click();    
+    document.body.removeChild(a);    
+    toast("Download concluído!");  } catch(e) {    
+    toast("Erro ao baixar arquivo.");  }
+};
+
+window.batchDownloadZip = async function() {  
+  if(selectedBookIds.size === 0) return;  
+  const targetBooks = books.filter(b => selectedBookIds.has(b.id));  
+  if(!targetBooks.length) return;    
+  progress(true, `Preparando ${targetBooks.length} livro(s)...`, 10);  
+  try {    
+    const zip = new JSZip();    
+    for(let i = 0; i < targetBooks.length; i++) {      
+      const b = targetBooks[i];      
+      progress(true, `Baixando (${i+1}/${targetBooks.length}): ${b.title}`, Math.round(10 + (i/targetBooks.length)*70));      
+      let blob = await getOriginal(b);      
+      if(!blob) {        
+        progress(false);        
+        toast(`Arquivo para "${b.title}" não encontrado. Selecione-o:`);        
+        blob = await new Promise((resolve) => {          
+          const inp = document.createElement("input");          
+          inp.type = "file";          
+          inp.accept = `.${b.ext}`;          
+          inp.onchange = (e) => resolve(e.target.files[0]);          
+          inp.click();        });      
+      }      
+      if(blob) {        
+        zip.file(`${b.title}.${b.ext}`, blob);      }    
+    }    
+    progress(true, "Compactando em ZIP...", 90);    
+    const content = await zip.generateAsync({type: "blob", compression: "STORE"});    
+    progress(false);        
+    const url = registerObjectUrl(URL.createObjectURL(content));    
+    const a = document.createElement("a");    
+    a.href = url;    
+    a.download = "livros_selecionados.zip";    
+    document.body.appendChild(a);    
+    a.click();    
+    document.body.removeChild(a);    
+    toast("ZIP gerado com sucesso!");    
+    clearSelection();  } catch(e) {    
+    progress(false);    
+    toast("Erro ao gerar ZIP dos selecionados.");  }
+};
+
+window.downloadFolderZip = async function(folderName) {  
+  const targetBooks = books.filter(b => b.folder === folderName);  
+  if(!targetBooks.length) { toast("Pasta vazia."); return; }    
+  progress(true, `Preparando pasta "${folderName}"...`, 10);  
+  try {    
+    const zip = new JSZip();    
+    for(let i = 0; i < targetBooks.length; i++) {      
+      const b = targetBooks[i];      
+      progress(true, `Incluindo (${i+1}/${targetBooks.length}): ${b.title}`, Math.round(10 + (i/targetBooks.length)*70));      
+      let blob = await getOriginal(b);      
+      if(!blob) {        
+        progress(false);        
+        toast(`Arquivo para "${b.title}" não encontrado. Selecione-o:`);        
+        blob = await new Promise((resolve) => {          
+          const inp = document.createElement("input");          
+          inp.type = "file";          
+          inp.accept = `.${b.ext}`;          
+          inp.onchange = (e) => resolve(e.target.files[0]);          
+          inp.click();        });      
+      }      
+      if(blob) {        
+        zip.file(`${b.title}.${b.ext}`, blob);      }    
+    }    
+    progress(true, "Compactando pasta...", 90);    
+    const content = await zip.generateAsync({type: "blob", compression: "STORE"});    
+    progress(false);        
+    const url = registerObjectUrl(URL.createObjectURL(content));    
+    const a = document.createElement("a");    
+    a.href = url;    
+    a.download = `${folderName}_biblioteca.zip`;    
+    document.body.appendChild(a);    
+    a.click();    
+    document.body.removeChild(a);    
+    toast(`Pasta "${folderName}" baixada com sucesso!`);  } catch(e) {    
+    progress(false);    
+    toast("Erro ao baixar pasta.");  }
+};
+
+async function buildThumbsForPDF(doc,book){ 
+  const holder=$("thumbs");if(!holder)return;holder.innerHTML=""; 
+  const make=async(item,n)=>{if(item.dataset.ready)return;item.dataset.ready="1";try{const p=await doc.getPage(n),vp=p.getViewport({scale:.16}),c=document.createElement("canvas");c.width=vp.width;c.height=vp.height;await p.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;const im=document.createElement("img");im.src=registerObjectUrl(c.toDataURL("image/jpeg",.65));item.prepend(im)}catch(e){}}; 
+  for(let n=1;n<=doc.numPages;n++){const item=document.createElement("div");item.className="thumb";item.dataset.n=n;item.innerHTML=`<div class="n">${n}</div>`;item.onclick=()=>goPage(n);holder.appendChild(item)} 
+  const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){make(e.target,Number(e.target.dataset.n));observer.unobserve(e.target)}}),{root:holder,rootMargin:"500px"}); 
+  holder.querySelectorAll(".thumb").forEach(x=>observer.observe(x)); 
+  for(let n=1;n<=Math.min(6,doc.numPages);n++)await make(holder.querySelector(`[data-n="${n}"]`),n)
+}
+
+async function buildThumbsHQ(book){ 
+  const holder=$("thumbs");if(!holder)return;holder.innerHTML=""; 
+  const make=async(item,n)=>{if(item.dataset.ready)return;item.dataset.ready="1";const blob=await getPageBlob(book,n);if(!blob)return;const im=document.createElement("img");im.src=registerObjectUrl(URL.createObjectURL(blob));item.prepend(im)}; 
+  for(let n=1;n<=book.totalPages;n++){const item=document.createElement("div");item.className="thumb";item.dataset.n=n;item.innerHTML=`<div class="n">${n}</div>`;item.onclick=()=>goPage(n);holder.appendChild(item)} 
+  const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){make(e.target,Number(e.target.dataset.n));observer.unobserve(e.target)}}),{root:holder,rootMargin:"400px"}); 
+  holder.querySelectorAll(".thumb").forEach(x=>observer.observe(x)); 
+  for(let n=1;n<=Math.min(5,book.totalPages);n++)await make(holder.querySelector(`[data-n="${n}"]`),n)
+}
+
+function selectThumb(n){document.querySelectorAll(".thumb").forEach(x=>x.classList.toggle("active",Number(x.dataset.n)===n));const a=document.querySelector(".thumb.active");if(a)a.scrollIntoView({block:"nearest"})}
+
+async function renderPDF(n){ 
+  const p=await pdfDoc.getPage(n), c=$("page-canvas"),vp=p.getViewport({scale}); 
+  if(!c) return; 
+  c.width=vp.width;c.height=vp.height;
+  await p.render({canvasContext:c.getContext("2d"),viewport:vp}).promise; 
+  $("page-indicator").textContent=`Página ${n} de ${pdfDoc.numPages}`;
+  selectThumb(n);
+  currentBook.page=n;
+  await updateBook();
+}
+
+async function renderHQ(n){ 
+  const blob=await getPageBlob(currentBook,n);if(!blob)return;
+  const url=registerObjectUrl(URL.createObjectURL(blob)),img=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=url}); 
+  const c=$("page-canvas");if(!c)return;
+  const w=img.width*scale/1.2,h=img.height*scale/1.2;
+  c.width=w;c.height=h;
+  c.getContext("2d").drawImage(img,0,0,w,h); 
+  $("page-indicator").textContent=`Página ${n} de ${currentBook.totalPages}`;
+  selectThumb(n);
+  currentBook.page=n;
+  await updateBook();
+}
+
+async function goPage(n){  
+  if(!currentBook)return;  
+  if(n<1||n>(currentBook.totalPages||1))return;  
+  currentPage=n;  
+  if(currentBook.type==="pdf")await renderPDF(n);  
+  else if(currentBook.type==="hq")await renderHQ(n);
+}
+
+window.goPage = goPage;
+window.changePage = (d) => {  
+  if(!currentBook) return;  
+  if(currentBook.type === "epub" && epubBook && epubBook.rendition) {    
+    if(d > 0) epubBook.rendition.next();    
+    else epubBook.rendition.prev();  
+  } else {    
+    goPage((currentBook?.page||1)+d);  
+  }
+};
+
+let epubFontSize = 100;
+window.zoom = (d) => {  
+  if(currentBook && currentBook.type === "epub" && epubBook && epubBook.rendition) {    
+    epubFontSize = Math.max(70, Math.min(200, epubFontSize + (d > 0 ? 10 : -10)));    
+    epubBook.rendition.themes.fontSize(epubFontSize + "%");  
+  } else {    
+    scale = Math.max(.5, Math.min(3, scale + d));    
+    if(currentBook) goPage(currentBook.page || 1);  
+  }
+};
+
+window.fullscreenReader = ()=>{if(!document.fullscreenElement)$("reader").requestFullscreen?.();else document.exitFullscreen?.()};
+
+function toggleThemeMenu(e){  
+  e.stopPropagation();  
+  const m = $("theme-menu");  
+  if(m) m.style.display = m.style.display === "block" ? "none" : "block";
+}
+document.addEventListener("click", e => {  
+  if(!e.target.closest(".theme-wrap")) {    
+    const m = $("theme-menu");    
+    if(m) m.style.display = "none";  
+  }
+});
+
+window.setTheme = function(t){  
+  if(t==="light") document.documentElement.removeAttribute("data-theme");  
+  else if(["sepia","dark"].includes(t)) document.documentElement.dataset.theme=t;    
+  if(epubBook && epubBook.rendition) {    
+    epubBook.rendition.themes.select(t);  }  
+  const m = $("theme-menu");  
+  if(m) m.style.display = "none";  
+  const hm = $("home-theme-menu");  
+  if(hm) hm.style.display = "none";
+};
+
+// Text-to-Speech integration
+let ttsUtterance = null;
+window.toggleTTS = function() {
+  if (!('speechSynthesis' in window)) {
+    toast("Seu navegador não suporta leitura em voz alta.");
+    return;
+  }
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    toast("Leitura em voz alta pausada.");
+    return;
+  }
+  let textToRead = "";
+  if (currentBook.type === "txt") {
+    textToRead = $("txt-container").textContent;
+  } else {
+    toast("Leitura em voz alta otimizada para TXT no momento.");
+    return;
+  }
+  if (!textToRead) return;
+  ttsUtterance = new SpeechSynthesisUtterance(textToRead.slice(0, 3000)); // Lendo um trecho inicial
+  ttsUtterance.lang = "pt-BR";
+  window.speechSynthesis.speak(ttsUtterance);
+  toast("Iniciando leitura em voz alta...");
+};
+
+async function openBook(id){ 
+  currentBook=books.find(x=>x.id===id);if(!currentBook)return; 
+  $("reader").classList.add("active");
+  $("reader-title").textContent=currentBook.title; 
+  $("page-canvas").style.display="none";
+  $("epub-container").style.display="none";
+  $("txt-container").style.display="none";
+  $("thumbs").innerHTML=""; 
+  scale=1.2; 
+  try{  
+    let blob = await getOriginal(currentBook);  
+    if(!blob) {    
+      const selectedFile = await new Promise((resolve) => {      
+        const inp = document.createElement("input");      
+        inp.type = "file";      
+        inp.accept = `.${currentBook.ext}`;      
+        inp.onchange = (e) => resolve(e.target.files[0]);      
+        inp.click();    });    
+      if(!selectedFile) { closeReader(); return; }    
+      blob = selectedFile;    
+      currentBook.fileBlob = blob;  
+    }
+
+    if(currentBook.type==="pdf"){   
+      const pdfBytes=new Uint8Array(await blob.arrayBuffer());
+      pdfDoc=await pdfjsLib.getDocument({data:pdfBytes}).promise;
+      currentBook.totalPages=pdfDoc.numPages;
+      $("page-canvas").style.display="block";
+      await goPage(currentBook.page||1);
+      buildThumbsForPDF(pdfDoc,currentBook)  
+    }else if(currentBook.type==="hq"){   
+      $("page-canvas").style.display="block";
+      await buildThumbsHQ(currentBook);
+      await goPage(currentBook.page||1)  
+    }else if(currentBook.type==="txt"){   
+      $("txt-container").style.display="block";
+      $("txt-container").textContent=await blob.text();
+      $("page-indicator").textContent="Texto"  
+    }else if(currentBook.type==="epub"){   
+      $("epub-container").style.display="block";   
+      $("epub-container").innerHTML="";   
+      try {     
+        epubBook = ePub(await blob.arrayBuffer());     
+        await epubBook.ready;          
+        const rendition = epubBook.renderTo("epub-container", { width: "100%", height: "75vh", spread: "auto" });
+
+        rendition.themes.register("light", { "body": { "background": "#ffffff !important", "color": "#1d1d1f !important" } });     
+        rendition.themes.register("sepia", { "body": { "background": "#f5e6cc !important", "color": "#5c4033 !important" } });     
+        rendition.themes.register("dark", { "body": { "background": "#1c1c1e !important", "color": "#f5f5f7 !important" } });
+
+        const currentThemeAttr = document.documentElement.dataset.theme || "light";     
+        rendition.themes.select(currentThemeAttr);
+
+        await rendition.display(currentBook.epubCfi || undefined);          
+        rendition.on("relocated", (location) => {       
+          const cfi = location.start.cfi;       
+          if(cfi) { currentBook.epubCfi = cfi; updateBook(); }       
+          let percent = epubBook.locations.percentageFromCfi(cfi);       
+          if(isNaN(percent) || percent < 0) percent = 0;       
+          $("page-indicator").textContent = `EPUB (${Math.round(percent * 100)}%)`;     
+        });     
+        epubBook.locations.generate(1024).catch(() => {});   
+      } catch(e) {     
+        $("epub-container").innerHTML = "<div style='padding:30px;color:red;'>Erro ao carregar EPUB.</div>";   
+      }  
+    }  
+    await updateBook() 
+  }catch(err){
+    toast("Erro ao abrir: "+err.message)
+  }
+}
+
+window.closeReader = function(){  
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  $("reader").classList.remove("active");  
+  currentBook=null;pdfDoc=null;epubBook=null;  
+  cleanObjectUrls();
+  renderLibrary($("search")?.value || "");
+}
+
+window.bookmark = function(){ 
+  if(!currentBook){toast("Abra um livro.");return} 
+  const key="libBooks_marks",marks=JSON.parse(localStorage.getItem(key)||"[]"); 
+  const mark={id:Date.now(),bookId:currentBook.id,title:currentBook.title,page:currentBook.page||1,date:new Date().toLocaleString("pt-BR")}; 
+  marks.push(mark);
+  localStorage.setItem(key,JSON.stringify(marks));
+  toast(`Marcador salvo na página ${mark.page}.`)
+}
+
+function renderMarks(){ 
+  const a=JSON.parse(localStorage.getItem("libBooks_marks")||"[]").reverse(); 
+  const valid=a.filter(m=>books.some(b=>String(b.id)===String(m.bookId))); 
+  $("marks").innerHTML=valid.length?valid.map(m=>`<div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:10px"><b>${esc(m.title)}</b><div style="font-size:12px;color:var(--muted);margin-top:4px">Página ${m.page} · ${esc(m.date)}</div><button class="btn" style="margin-top:8px" onclick="window.abrirMarcador('${String(m.bookId).replace(/'/g,"'")}',${Number(m.page)})">Abrir página</button></div>`).join(""):'<p class="empty">Nenhum marcador salvo.</p>';
+}
+
+function renderStats() {
+  const totalBooks = books.length;
+  const foldersCount = folderNames().length;
+  const totalPagesRead = books.reduce((acc, b) => acc + (b.page || 0), 0);
+  $("stats-content").innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--border);padding:20px;border-radius:12px;flex:1;min-width:200px">
+      <h3>${totalBooks}</h3>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px">Livros na Biblioteca</p>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);padding:20px;border-radius:12px;flex:1;min-width:200px">
+      <h3>${foldersCount}</h3>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px">Pastas de Organização</p>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);padding:20px;border-radius:12px;flex:1;min-width:200px">
+      <h3>${totalPagesRead}</h3>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px">Páginas Acessadas no Total</p>
+    </div>
+  `;
+}
+
+window.abrirMarcador = async function(id,page){  
+  await openBook(id);  
+  setTimeout(()=>goPage(Number(page)),500);
+}
+
+window.openEditModal = function(id) {
+  const book = books.find(b => b.id === id);
+  if(!book) return;
+  let modal = $("edit-book-modal");
+  if(!modal) {
+    modal = document.createElement("div");
+    modal.id = "edit-book-modal";
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:3000;display:flex;align-items:center;justify-content:center;";
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:360px;box-shadow:0 10px 30px rgba(0,0,0,0.2)">
+      <h3 style="font-size:16px;margin-bottom:12px">Editar Metadados</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;margin-bottom:16px">
+        <label>Título: <input id="edit-title" value="${esc(book.title)}" style="width:100%;padding:7px;margin-top:4px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"></label>
+        <label>Autor: <input id="edit-author" value="${esc(book.author||"")}" style="width:100%;padding:7px;margin-top:4px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"></label>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn" onclick="$('edit-book-modal').style.display='none'">Cancelar</button>
+        <button class="btn primary" id="save-edit-btn">Salvar</button>
+      </div>
+    </div>
+  `;
+  modal.style.display = "flex";
+  $("save-edit-btn").onclick = async () => {
+    book.title = $("edit-title").value.trim() || book.title;
+    book.author = $("edit-author").value.trim() || "Autor Local";
+    await updateBook();
+    modal.style.display = "none";
+    renderLibrary($("search")?.value || "");
+    toast("Metadados atualizados com sucesso!");
+  };
+};
+
+window.deleteFolder = async function(folderName) {  
+  if(!confirm(`Excluir pasta "${folderName}"? Os livros ficarão sem pasta.`)) return;  
+  books.forEach(b => { if(b.folder === folderName) b.folder = ""; });  
+  if(db) await Promise.all(books.map(b => put(STORES.books, b)));  
+  if(currentFolder === folderName) currentFolder = "__all__";  
+  renderOrganization(); 
+  renderLibrary($("search")?.value || "");  
+  toast(`Pasta excluída.`);
+};
+
+window.toggleHomeThemeMenu = function(e) {  
+  e.stopPropagation();  
+  const m = $("home-theme-menu");  
+  if(m) m.style.display = m.style.display === "block" ? "none" : "block";
+};
+
+window.toggleMainFullscreen = function() {  
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});  
+  else if (document.exitFullscreen) document.exitFullscreen();
+};
+
+window.batchDeleteBooks = async function() {  
+  if(!confirm(`Deseja excluir os ${selectedBookIds.size} livros selecionados?`)) return;  
+  const idsToDelete = [...selectedBookIds];  
+  books = books.filter(b => !selectedBookIds.has(b.id));  
+  if(db) {    
+    for(const id of idsToDelete) {      
+      try { await tx(STORES.books, "readwrite").delete(id); } catch(e){}    
+    }  
+  }  
+  clearSelection();  
+  renderOrganization();  
+  toast("Livros selecionados excluídos.");
+};
+
+window.batchMoveModal = function() {  
+  const folders = folderNames();  
+  let modal = $("move-folder-modal");  
+  if(!modal) {    
+    modal = document.createElement("div");    
+    modal.id = "move-folder-modal";    
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:3000;display:flex;align-items:center;justify-content:center;";    
+    document.body.appendChild(modal);  
+  }    
+  let foldersHtml = folders.length ? folders.map(f => `<div class="folder-option" data-folder="${esc(f)}" style="padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;background:var(--bg);font-size:13px">📁 <b>${esc(f)}</b></div>`).join("") : '<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Nenhuma pasta criada ainda. Crie uma abaixo:</p>';    
+  
+  modal.innerHTML = `    
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:340px;box-shadow:0 10px 30px rgba(0,0,0,0.2)">      
+      <h3 style="font-size:15px;margin-bottom:6px">Mover ${selectedBookIds.size} livros</h3>      
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Escolha a pasta de destino:</p>      
+      <div style="max-height:160px;overflow:auto;margin-bottom:14px">${foldersHtml}</div>      
+      <div style="display:flex;gap:6px;margin-bottom:12px">        
+        <input id="quick-new-folder-input" placeholder="Nome da nova pasta..." style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px">        
+        <button class="btn primary" id="quick-create-folder-btn">Criar</button>      
+      </div>      
+      <div style="display:flex;flex-direction:column;gap:8px">        
+        <button class="btn" id="remove-from-folder-btn" style="background:rgba(255,59,48,0.1);color:#ff3b30;border-color:rgba(255,59,48,0.3)">📥 Remover da pasta</button>        
+        <button class="btn" onclick="$('move-folder-modal').style.display='none'">Cancelar</button>      
+      </div>    
+    </div>  `;
+  modal.style.display = "flex";    
+  
+  modal.querySelectorAll(".folder-option").forEach(el => {    
+    el.onclick = async () => {      
+      const targetFolder = el.dataset.folder;      
+      for(const id of selectedBookIds) {        
+        const b = books.find(x => x.id === id);        
+        if(b) { b.folder = targetFolder; if(db) await put(STORES.books, b); }      
+      }      
+      modal.style.display = "none";      
+      clearSelection();      
+      renderOrganization();      
+      toast(`Livros movidos para "${targetFolder}".`);    };  
+  });    
+  
+  $("quick-create-folder-btn").onclick = async () => {    
+    const val = $("quick-new-folder-input").value.trim();    
+    if(!val) { toast("Digite o nome."); return; }    
+    for(const id of selectedBookIds) {      
+      const b = books.find(x => x.id === id);      
+      if(b) { b.folder = val; if(db) await put(STORES.books, b); }    
+    }    
+    modal.style.display = "none";    
+    clearSelection();    
+    renderOrganization();    
+    toast(`Pasta "${val}" criada e livros movidos!`);  };    
+  
+  $("remove-from-folder-btn").onclick = async () => {    
+    for(const id of selectedBookIds) {      
+      const b = books.find(x => x.id === id);      
+      if(b) { b.folder = ""; if(db) await put(STORES.books, b); }    
+    }    
+    modal.style.display = "none";    
+    clearSelection();    
+    renderOrganization();    
+    toast("Livros removidos das pastas.");  };
+};
+
+window.deleteBook = async function(id) {  
+  if(!confirm("Excluir este livro?")) return;  
+  books = books.filter(b => b.id !== id);  
+  selectedBookIds.delete(id);  
+  if(db) try { await tx(STORES.books, "readwrite").delete(id); } catch(e){}  
+  renderLibrary($("search")?.value || "");  
+  renderOrganization();  
+  toast("Livro excluído.");
+};
+
+window.moveBookToFolder = async function(id) {  
+  selectedBookIds.clear();  
+  selectedBookIds.add(id);  
+  batchMoveModal();
+};
+
+window.openExportModal = function() {  
+  let modal = $("export-zip-modal");  
+  if(!modal) {    
+    modal = document.createElement("div");    
+    modal.id = "export-zip-modal";    
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:3000;display:flex;align-items:center;justify-content:center;";    
+    document.body.appendChild(modal);  
+  }
+
+  modal.innerHTML = `    
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:420px;box-shadow:0 10px 30px rgba(0,0,0,0.2)">      
+      <h3 style="font-size:16px;margin-bottom:6px">📤 Exportar Backup Leve</h3>      
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Livros encontrados (${books.length} total). Este backup salva metadados, capas, progresso, marcadores, pastas e opcionalmente os arquivos originais.</p>            
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;margin-bottom:20px">        
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-covers" checked style="accent-color:var(--accent)"> Incluir capas</label>        
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-progress" checked style="accent-color:var(--accent)"> Incluir progresso de leitura e CFI</label>        
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-marks" checked style="accent-color:var(--accent)"> Incluir marcadores</label>        
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-folders" checked style="accent-color:var(--accent)"> Incluir pastas/organização</label>      
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-pdfs" style="accent-color:var(--accent)"> Incluir pdf´s</label>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">        
+        <button class="btn" onclick="$('export-zip-modal').style.display='none'">Cancelar</button>        
+        <button class="btn primary" id="confirm-export-zip-btn">Exportar Backup (.zip)</button>      
+      </div>    
+    </div>  `;
+  modal.style.display = "flex";
+
+  $("confirm-export-zip-btn").onclick = async () => {    
+    modal.style.display = "none";    
+    await executeExportZip({      
+      covers: $("chk-covers").checked,      
+      progress: $("chk-progress").checked,      
+      marks: $("chk-marks").checked,      
+      folders: $("chk-folders").checked,
+      pdfs: $("chk-pdfs").checked
+    });  
+  };
+};
+
+async function executeExportZip(options) {  
+  if(!db) { toast("Banco de dados indisponível."); return; }  
+  progress(true, "Preparando backup...", 20);  
+  try {    
+    const zip = new JSZip();    
+    const allBooks = await all(STORES.books);        
+    const exportBooks = allBooks.map(b => {      
+      let copy = { id: b.id, title: b.title, author: b.author, ext: b.ext, type: b.type, created: b.created };      
+      if(options.folders) copy.folder = b.folder;      
+      if(options.progress) { copy.page = b.page; copy.totalPages = b.totalPages; copy.epubCfi = b.epubCfi; }      
+      if(options.covers) copy.coverKey = b.coverKey;      
+      return copy;    });
+
+    zip.file("books.json", JSON.stringify(exportBooks, null, 2));
+    if(options.marks) {      
+      const marks = localStorage.getItem("libBooks_marks") || "[]";      
+      zip.file("marks.json", marks);    }
+
+    if(options.covers) {      
+      progress(true, "Adicionando capas...", 40);      
+      const allThumbs = await all(STORES.thumbs);      
+      const thumbsFolder = zip.folder("thumbs");      
+      for(const t of allThumbs) {        
+        if(t.blob) thumbsFolder.file(t.key.replace(":", "_"), t.blob);      
+      }    }
+
+    if(options.pdfs) {
+      progress(true, "Incluindo PDFs e arquivos originais...", 60);
+      const pdfFolder = zip.folder("pdfs");
+      for(let i = 0; i < allBooks.length; i++) {
+        const b = allBooks[i];
+        let blob = await getOriginal(b);
+        if(blob) {
+          pdfFolder.file(`${b.title}.${b.ext}`, blob);
+        }
+      }
+    }
+
+    progress(true, "Gerando arquivo ZIP...", 85);    
+    const content = await zip.generateAsync({type: "blob", compression: "STORE"});    
+    progress(false);
+
+    try {
+      if (window.__TAURI__ && window.__TAURI__.core) {
+        const { save } = window.__TAURI__.dialog || window.__TAURI__.plugin?.dialog;
+        const { writeFile } = window.__TAURI__.fs || window.__TAURI__.plugin?.fs;
+        
+        if (save && writeFile) {
+          const filePath = await save({
+            defaultPath: 'libbooks_backup.zip',
+            filters: [{ name: 'Arquivo ZIP', extensions: ['zip'] }]
+          });
+          if (filePath) {
+            const arrayBuffer = await content.arrayBuffer();
+            await writeFile(filePath, new Uint8Array(arrayBuffer));
+            toast("Backup exportado com sucesso!");
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      console.log("Usando fallback de download web:", err);
+    }
+
+    const url = registerObjectUrl(URL.createObjectURL(content));    
+    const a = document.createElement("a");    
+    a.href = url;    
+    a.download = "libbooks_backup.zip";    
+    document.body.appendChild(a);    
+    a.click();    
+    document.body.removeChild(a);        
+    toast("Backup exportado com sucesso!");  } catch(e) {    
+    progress(false);    
+    toast("Erro ao gerar backup.");  }
+}
+
+window.openImportModal = function() {  
+  const input = document.createElement("input");  
+  input.type = "file";  
+  input.accept = "*";  
+  input.onchange = async (e) => {    
+    const file = e.target.files[0];    
+    if(!file) return;        
+    if(file.name.endsWith(".json")) {      
+      try {        
+        const text = await file.text();        
+        const imported = JSON.parse(text);        
+        if(Array.isArray(imported)) {          
+          books = imported;          
+          if(db) { for(const b of books) { await put(STORES.books, b); } }          
+          renderLibrary(); renderOrganization();          
+          toast("Backup JSON importado com sucesso!");        }      
+      } catch(err) { toast("Erro ao importar JSON."); }      
+      return;    }
+
+    progress(true, "Lendo backup ZIP...", 20);    
+    try {      
+      const zip = await JSZip.loadAsync(file);      
+      const booksFile = zip.file("books.json");      
+      if(!booksFile) { throw new Error("Arquivo books.json não encontrado no ZIP."); }            
+      const booksData = JSON.parse(await booksFile.async("text"));      
+      books = booksData;      
+      if(db) {        
+        for(const b of books) { await put(STORES.books, b); }                
+        const marksFile = zip.file("marks.json");        
+        if(marksFile) {          
+          localStorage.setItem("libBooks_marks", await marksFile.async("text"));        }
+
+        progress(true, "Restaurando capas...", 50);        
+        const thumbsFolder = zip.folder("thumbs");        
+        if(thumbsFolder) {          
+          const thumbFiles = thumbsFolder.files;          
+          for(const relPath in thumbFiles) {            
+            if(thumbFiles[relPath].dir) continue;            
+            const blob = await thumbFiles[relPath].async("blob");            
+            const origKey = relPath.replace("thumbs/", "").replace("_", ":");            
+            await put(STORES.thumbs, {key: origKey, blob});          }        }
+
+        progress(true, "Restaurando PDFs...", 75);
+        const pdfFolder = zip.folder("pdfs");
+        if(pdfFolder) {
+          const pdfFiles = pdfFolder.files;
+          for(const relPath in pdfFiles) {
+            if(pdfFiles[relPath].dir) continue;
+            const blob = await pdfFiles[relPath].async("blob");
+            const fileName = relPath.replace("pdfs/", "");
+            const matchedBook = books.find(b => `${b.title}.${b.ext}` === fileName);
+            if(matchedBook) {
+              await put(STORES.pages, {key: matchedBook.fileKey, bookId: matchedBook.id, num: 0, name: fileName, blob, kind: "original"});
+            }
+          }
+        }
+      }
+
+      progress(false);      
+      renderLibrary();      
+      renderOrganization();      
+      toast("Backup importado com sucesso!");    } catch(err) {      
+      progress(false);      
+      toast("Erro ao importar arquivo ZIP.");    }  };  
+  input.click();
+};
+
+document.addEventListener("click", (e) => {  
+  const moveBtn = e.target.closest(".move-btn");  
+  const deleteBtn = e.target.closest(".delete-btn");  
+  const downloadBtn = e.target.closest(".download-btn");  
+  const editBtn = e.target.closest(".edit-btn");
+  if(moveBtn) { e.stopPropagation(); window.moveBookToFolder(moveBtn.dataset.id); }  
+  if(deleteBtn) { e.stopPropagation(); window.deleteBook(deleteBtn.dataset.id); }  
+  if(downloadBtn) { e.stopPropagation(); window.downloadBookFile(downloadBtn.dataset.id); }
+  if(editBtn) { e.stopPropagation(); window.openEditModal(editBtn.dataset.id); }
+});
+
+document.addEventListener("DOMContentLoaded", () => {  
+  initApp();  
+  $("nav-biblioteca").onclick = () => tab('biblioteca');  
+  $("nav-marcadores").onclick = () => tab('marcadores');  
+  $("nav-estatisticas").onclick = () => tab('estatisticas');
+  $("org-btn").onclick = toggleOrganization;  
+  $("search").oninput = (e) => renderLibrary(e.target.value);    
+  
+  const addBtn = $("add-book-btn");  
+  const fileInput = $("file-input");    
+  
+  if(addBtn && fileInput) {    
+    fileInput.accept = "*/*";
+    addBtn.onclick = (e) => {      
+      e.preventDefault();
+      fileInput.click();
+    };
+    fileInput.onchange = (e) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        processFiles(files);
+      }
+      e.target.value = "";
+    };  
+  }    
+  
+  const dropZone = $("library-drop-zone");  
+  if(dropZone) {    
+    dropZone.addEventListener("dragover", (e) => {      
+      e.preventDefault();      
+      dropZone.classList.add("drag-over");    });    
+    dropZone.addEventListener("dragleave", () => {      
+      dropZone.classList.remove("drag-over");    });    
+    dropZone.addEventListener("drop", (e) => {      
+      e.preventDefault();      
+      dropZone.classList.remove("drag-over");      
+      if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {        
+        processFiles(e.dataTransfer.files);      
+      }    });  
+  }
+
+  $("reader-back-btn").onclick = closeReader;  
+  $("reader-mark-btn").onclick = window.bookmark;  
+  $("zoom-out-btn").onclick = () => window.zoom(-.15);  
+  $("zoom-in-btn").onclick = () => window.zoom(.15);  
+  $("page-prev-btn").onclick = () => window.changePage(-1);  
+  $("page-next-btn").onclick = () => window.changePage(1);  
+  $("fullscreen-btn").onclick = window.fullscreenReader;
+});
+
+window.addEventListener("keydown",e=>{  
+  if(!$("reader").classList.contains("active")) return;  
+  if(e.key==="ArrowRight" || e.key==="PageDown") window.changePage(1);  
+  if(e.key==="ArrowLeft" || e.key==="PageUp") window.changePage(-1);  
+  if(e.key==="Escape") window.closeReader();
+});
+</script>
+</body>
+</html>
