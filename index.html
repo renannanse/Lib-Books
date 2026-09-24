@@ -1365,6 +1365,15 @@ window.addEventListener("keydown",e=>{
   if(e.key==="ArrowLeft" || e.key==="PageUp") window.changePage(-1);  
   if(e.key==="Escape") window.closeReader();
 });
-</script>
-</body>
+  </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then((reg) => console.log('Service Worker registrado com sucesso!', reg))
+            .catch((err) => console.log('Falha ao registrar o Service Worker:', err));
+        });
+      }
+    </script>
+  </body>
 </html>
