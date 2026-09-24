@@ -1,6 +1,7 @@
 {
   "name": "Lib-Books",
   "short_name": "LibBooks",
+  "description": "Leitor e gerenciador de biblioteca virtual moderno",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
